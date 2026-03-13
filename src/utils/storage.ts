@@ -24,19 +24,27 @@ export const getNotes = async (uid: string): Promise<InvestmentNote[]> => {
     
     const querySnapshot = await getDocs(q);
     const notes: InvestmentNote[] = [];
-    
     const nowStr = new Date().toISOString();
+    const updatePromises: Promise<void>[] = [];
 
-    for (const d of querySnapshot.docs) {
+    querySnapshot.docs.forEach(d => {
       const data = d.data() as any;
       const note: InvestmentNote = { ...data, id: d.id };
 
-      // Expiration check logic (similar to legacy)
+      // Expiration check logic
       if (note.status === 'active' && note.targetReviewDate && note.targetReviewDate < nowStr) {
-        await updateDoc(doc(db, COLLECTION_NAME, d.id), { status: 'review_needed' });
+        // Update local object immediately for UI responsiveness
         note.status = 'review_needed';
+        // Fire off firestore update without blocking the whole list return
+        updatePromises.push(updateDoc(doc(db, COLLECTION_NAME, d.id), { status: 'review_needed' }));
       }
       notes.push(note);
+    });
+
+    // Optionally await updates if strictly necessary, but better to return data first.
+    // However, for data consistency in simple apps, it's safer to let them run.
+    if (updatePromises.length > 0) {
+      Promise.all(updatePromises).catch(err => console.error('Background status update failed:', err));
     }
 
     return notes;
