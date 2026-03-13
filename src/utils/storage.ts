@@ -77,3 +77,8 @@ export const saveNote = (note: Omit<InvestmentNote, 'id' | 'userId' | 'createdAt
   
   return newNote;
 };
+export const updateNoteStatus = (id: string, status: InvestmentNote['status']): void => {
+  const notes = getNotes();
+  const updated = notes.map(n => n.id === id ? { ...n, status } : n);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+};

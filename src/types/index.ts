@@ -10,7 +10,7 @@ export interface InvestmentNote {
   userAnswer2: string;
   checkDate: string;
   targetReviewDate?: string; // Calculated absolute date
-  status: 'active' | 'review_needed' | 'closed'; // Review flow state
+  status: 'active' | 'review_needed' | 'closed' | 'reviewed'; // Review flow state
   stopLossCondition?: string;
   aiSummary?: {
     logic: string[];

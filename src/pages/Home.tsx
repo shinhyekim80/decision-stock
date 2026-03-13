@@ -41,6 +41,7 @@ export default function Home() {
 
   const filteredNotes = useMemo(() => {
     if (filter === 'ALL') return notes;
+    if (filter === 'REVIEW_NEEDED') return notes.filter(n => n.status === 'review_needed');
     if (filter === '기타') return notes.filter(n => !['조급함 (FOMO)', '불안/공포', '본전 심리', '단순 기대감', '자신감', '여유로움'].includes(n.tagEmotion));
     return notes.filter(n => n.tagEmotion === filter);
   }, [notes, filter]);
@@ -56,17 +57,20 @@ export default function Home() {
 
       {reviewNeededNotes.length > 0 && (
         <div 
-          onClick={() => navigate(`/note/${reviewNeededNotes[0].id}`)}
-          className="bg-red-50 border border-red-200 p-4 rounded-xl mb-6 shadow-sm cursor-pointer flex justify-between items-center hover:bg-red-100 transition-colors"
+          onClick={() => {
+            setFilter('REVIEW_NEEDED');
+            window.scrollTo({ top: 400, behavior: 'smooth' }); // Scroll to the list
+          }}
+          className="bg-red-50 border border-red-200 p-4 rounded-xl mb-6 shadow-sm cursor-pointer flex justify-between items-center hover:bg-red-100 transition-colors animate-pulse-subtle"
         >
           <div className="flex items-center gap-3">
             <span className="text-xl">🚨</span>
             <div className="flex flex-col">
-              <span className="font-bold text-sm text-red-700">과거의 내가 남긴 투자 오답노트 {reviewNeededNotes.length}건이 기다리고 있어요 👀</span>
-              <span className="text-xs text-red-500 font-medium mt-0.5">지금 눌러서 타임캡슐을 열어보세요.</span>
+              <span className="font-bold text-sm text-red-700">과거의 내가 남긴 투자 오답노트 {reviewNeededNotes.length}건이 상기되었습니다!</span>
+              <span className="text-xs text-red-500 font-medium mt-0.5">지금 아래 목록에서 빨간색 노트를 눌러 확인하세요.</span>
             </div>
           </div>
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-400"><path d="m9 18 6-6-6-6"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-400 rotate-90"><path d="m9 18 6-6-6-6"/></svg>
         </div>
       )}
 
@@ -117,17 +121,17 @@ export default function Home() {
         {/* Filter Scroll Container */}
         {notes.length > 0 && (
           <div className="flex overflow-x-auto gap-2 pb-2 mb-2 no-scrollbar">
-            {['ALL', '조급함 (FOMO)', '불안/공포', '본전 심리', '단순 기대감', '자신감', '여유로움', '기타'].map(f => (
+            {['ALL', 'REVIEW_NEEDED', '조급함 (FOMO)', '불안/공포', '본전 심리', '단순 기대감', '자신감', '여유로움', '기타'].map(f => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
                 className={`flex-shrink-0 whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold transition-colors ${
                   filter === f 
-                    ? 'bg-slate-800 text-white' 
+                    ? (f === 'REVIEW_NEEDED' ? 'bg-red-600 text-white' : 'bg-slate-800 text-white')
                     : 'bg-white text-slate-500 border border-slate-200 hover:border-slate-300'
                 }`}
               >
-                {f === 'ALL' ? '전체' : f}
+                {f === 'ALL' ? '전체' : f === 'REVIEW_NEEDED' ? '📍 복기 필요' : f}
               </button>
             ))}
           </div>
@@ -158,7 +162,12 @@ export default function Home() {
                 className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 cursor-pointer hover:border-blue-300 transition-colors"
               >
                 <div className="flex justify-between items-start mb-2">
-                  <h4 className="font-bold text-slate-800">{note.stockName || '종목 미상'}</h4>
+                  <div className="flex flex-col gap-1">
+                    {note.status === 'review_needed' && (
+                      <span className="text-[10px] bg-red-600 text-white px-1.5 py-0.5 rounded font-black w-fit animate-pulse">복기 시점 도달</span>
+                    )}
+                    <h4 className="font-bold text-slate-800">{note.stockName || '종목 미상'}</h4>
+                  </div>
                   <span className="text-xs text-slate-400 font-medium">
                     {new Date(note.createdAt).toLocaleDateString()}
                   </span>

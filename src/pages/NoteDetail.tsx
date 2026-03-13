@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getNoteById } from '../utils/storage';
+import { getNoteById, updateNoteStatus } from '../utils/storage';
 import type { InvestmentNote } from '../types';
 
 export default function NoteDetail() {
@@ -19,6 +19,13 @@ export default function NoteDetail() {
       }
     }
   }, [id, navigate]);
+
+  const handleMarkAsReviewed = () => {
+    if (note) {
+      updateNoteStatus(note.id, 'reviewed');
+      navigate('/', { replace: true });
+    }
+  };
 
   if (!note) {
     return <div className="min-h-screen bg-slate-50 flex items-center justify-center">Loading...</div>;
@@ -123,7 +130,15 @@ export default function NoteDetail() {
         </details>
       </section>
 
-      <div className="mt-auto pt-4 pb-6">
+      <div className="mt-auto pt-4 pb-6 flex flex-col gap-3">
+        {note.status === 'review_needed' && (
+          <button 
+            onClick={handleMarkAsReviewed} 
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold text-base shadow-md transition-colors"
+          >
+            ✅ 이제 복기를 완료했습니다
+          </button>
+        )}
         <button 
           onClick={() => navigate('/')} 
           className="w-full bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 py-4 rounded-xl font-bold text-base shadow-sm transition-colors"
