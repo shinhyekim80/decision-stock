@@ -1,46 +1,69 @@
+import { db } from '../firebase';
+import { 
+  collection, 
+  addDoc, 
+  getDocs, 
+  query, 
+  where, 
+  orderBy, 
+  doc, 
+  updateDoc,
+  getDoc
+} from 'firebase/firestore';
 import type { InvestmentNote } from '../types';
 
-const STORAGE_KEY = 'decisionstock_notes';
+const COLLECTION_NAME = 'notes';
 
-export const getNotes = (): InvestmentNote[] => {
+export const getNotes = async (uid: string): Promise<InvestmentNote[]> => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    let notes: InvestmentNote[] = raw ? JSON.parse(raw) : [];
+    const q = query(
+      collection(db, COLLECTION_NAME),
+      where('userId', '==', uid),
+      orderBy('createdAt', 'desc')
+    );
     
-    let hasChanges = false;
+    const querySnapshot = await getDocs(q);
+    const notes: InvestmentNote[] = [];
+    
     const nowStr = new Date().toISOString();
 
-    notes = notes.map(note => {
-      // Legacy compatibility
-      if (!note.status) {
-        note.status = 'active';
-        hasChanges = true;
-      }
+    for (const d of querySnapshot.docs) {
+      const data = d.data() as any;
+      const note: InvestmentNote = { ...data, id: d.id };
 
-      // Check for expiration
+      // Expiration check logic (similar to legacy)
       if (note.status === 'active' && note.targetReviewDate && note.targetReviewDate < nowStr) {
+        await updateDoc(doc(db, COLLECTION_NAME, d.id), { status: 'review_needed' });
         note.status = 'review_needed';
-        hasChanges = true;
       }
-      return note;
-    });
-
-    if (hasChanges) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+      notes.push(note);
     }
 
     return notes;
-  } catch {
+  } catch (error) {
+    console.error('Error fetching notes:', error);
     return [];
   }
 };
 
-export const getNoteById = (id: string): InvestmentNote | undefined => {
-  const notes = getNotes();
-  return notes.find(n => n.id === id);
+export const getNoteById = async (id: string): Promise<InvestmentNote | undefined> => {
+  try {
+    const docRef = doc(db, COLLECTION_NAME, id);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return { ...docSnap.data(), id: docSnap.id } as InvestmentNote;
+    }
+    return undefined;
+  } catch (error) {
+    console.error('Error fetching note by ID:', error);
+    return undefined;
+  }
 };
 
-export const saveNote = (note: Omit<InvestmentNote, 'id' | 'userId' | 'createdAt' | 'status' | 'targetReviewDate'>): InvestmentNote => {
+export const saveNote = async (
+  note: Omit<InvestmentNote, 'id' | 'userId' | 'createdAt' | 'status' | 'targetReviewDate'>,
+  uid: string
+): Promise<string> => {
   const now = new Date();
   let targetReviewDate: string | undefined;
 
@@ -55,30 +78,31 @@ export const saveNote = (note: Omit<InvestmentNote, 'id' | 'userId' | 'createdAt
     targetReviewDate = d.toISOString();
   } else if (note.checkDate === 'earnings') {
     const d = new Date(now);
-    d.setDate(d.getDate() + 14); // estimate 14 days
+    d.setDate(d.getDate() + 14);
     targetReviewDate = d.toISOString();
   } else if (note.checkDate === 'test') {
     const d = new Date(now);
-    d.setSeconds(d.getSeconds() - 10); // Expired 10 seconds ago for testing
+    d.setSeconds(d.getSeconds() - 10);
     targetReviewDate = d.toISOString();
   }
 
-  const newNote: InvestmentNote = {
+  const newNoteData = {
     ...note,
-    id: crypto.randomUUID(),
-    userId: 'user_1',
+    userId: uid,
     status: 'active',
     targetReviewDate,
     createdAt: now.toISOString()
   };
   
-  const existing = getNotes();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify([newNote, ...existing]));
-  
-  return newNote;
+  const docRef = await addDoc(collection(db, COLLECTION_NAME), newNoteData);
+  return docRef.id;
 };
-export const updateNoteStatus = (id: string, status: InvestmentNote['status']): void => {
-  const notes = getNotes();
-  const updated = notes.map(n => n.id === id ? { ...n, status } : n);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+
+export const updateNoteStatus = async (id: string, status: InvestmentNote['status']): Promise<void> => {
+  try {
+    const docRef = doc(db, COLLECTION_NAME, id);
+    await updateDoc(docRef, { status });
+  } catch (error) {
+    console.error('Error updating status:', error);
+  }
 };

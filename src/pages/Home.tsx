@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { auth } from '../firebase';
 import { getNotes } from '../utils/storage';
 import type { InvestmentNote } from '../types';
 
@@ -7,19 +8,31 @@ export default function Home() {
   const navigate = useNavigate();
   const [notes, setNotes] = useState<InvestmentNote[]>([]);
   const [filter, setFilter] = useState<string>('ALL');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setNotes(getNotes());
+    const fetchNotes = async () => {
+      const user = auth.currentUser;
+      if (user) {
+        setLoading(true);
+        const data = await getNotes(user.uid);
+        setNotes(data);
+        setLoading(false);
+      } else {
+        setLoading(false);
+      }
+    };
+    fetchNotes();
   }, []);
 
-  const reviewNeededNotes = notes.filter(n => n.status === 'review_needed');
+  const reviewNeededNotes = notes.filter((n: InvestmentNote) => n.status === 'review_needed');
 
   const { temp, status, color, bgColor, icon } = useMemo(() => {
     if (notes.length === 0) return { temp: 50, status: '평온', color: 'text-slate-500', bgColor: 'bg-slate-100', icon: '☁️' };
     
     // 점수 할당: 부정적/충동적 감정 높을수록 온도 상승, 안정적 감정일수록 유지/하락
     let totalScore = 0;
-    notes.forEach(n => {
+    notes.forEach((n: InvestmentNote) => {
       switch(n.tagEmotion) {
         case '조급함 (FOMO)': totalScore += 90; break;
         case '불안/공포': totalScore += 80; break;
@@ -41,17 +54,37 @@ export default function Home() {
 
   const filteredNotes = useMemo(() => {
     if (filter === 'ALL') return notes;
-    if (filter === 'REVIEW_NEEDED') return notes.filter(n => n.status === 'review_needed');
-    if (filter === '기타') return notes.filter(n => !['조급함 (FOMO)', '불안/공포', '본전 심리', '단순 기대감', '자신감', '여유로움'].includes(n.tagEmotion));
-    return notes.filter(n => n.tagEmotion === filter);
+    if (filter === 'REVIEW_NEEDED') return notes.filter((n: InvestmentNote) => n.status === 'review_needed');
+    if (filter === '기타') return notes.filter((n: InvestmentNote) => !['조급함 (FOMO)', '불안/공포', '본전 심리', '단순 기대감', '자신감', '여유로움'].includes(n.tagEmotion));
+    return notes.filter((n: InvestmentNote) => n.tagEmotion === filter);
   }, [notes, filter]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6">
+        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p className="text-slate-500 font-medium">기록을 불러오는 중...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col pt-12 p-6">
       <header className="flex justify-between items-center mb-8">
-        <h1 className="text-xl font-bold text-slate-900 tracking-tight">DecisionStock</h1>
-        <button className="p-2 rounded-full bg-slate-200">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-600"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <div className="flex flex-col">
+          <h1 className="text-xl font-bold text-slate-900 tracking-tight">DecisionStock</h1>
+          <span className="text-[10px] text-slate-400 font-bold">{auth.currentUser?.displayName || '사용자'}님, 오늘도 현명한 결정을 🧭</span>
+        </div>
+        <button 
+          onClick={() => {
+            if (window.confirm('로그아웃 하시겠습니까?')) {
+              auth.signOut();
+              navigate('/login');
+            }
+          }}
+          className="p-2 rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors flex items-center gap-1 text-[10px] font-black px-3"
+        >
+          LOGOUT
         </button>
       </header>
 

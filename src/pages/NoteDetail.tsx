@@ -7,28 +7,41 @@ export default function NoteDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [note, setNote] = useState<InvestmentNote | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (id) {
-      const found = getNoteById(id);
-      if (found) {
-        setNote(found);
-      } else {
-        // If not found, maybe redirect to home
-        navigate('/', { replace: true });
+    const fetchNote = async () => {
+      if (id) {
+        setLoading(true);
+        const found = await getNoteById(id);
+        if (found) {
+          setNote(found);
+        } else {
+          navigate('/', { replace: true });
+        }
+        setLoading(false);
       }
-    }
+    };
+    fetchNote();
   }, [id, navigate]);
 
-  const handleMarkAsReviewed = () => {
+  const handleMarkAsReviewed = async () => {
     if (note) {
-      updateNoteStatus(note.id, 'reviewed');
+      await updateNoteStatus(note.id, 'reviewed');
       navigate('/', { replace: true });
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
   if (!note) {
-    return <div className="min-h-screen bg-slate-50 flex items-center justify-center">Loading...</div>;
+    return <div className="min-h-screen bg-slate-50 flex items-center justify-center font-medium text-slate-500">노트를 찾을 수 없습니다.</div>;
   }
 
   // Format date

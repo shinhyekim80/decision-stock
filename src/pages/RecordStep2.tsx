@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { auth } from '../firebase';
 import { useRecordContext } from '../context/RecordContext';
 import { saveNote } from '../utils/storage';
 import { generateAiFeedback } from '../utils/ai';
@@ -24,6 +25,13 @@ export default function RecordStep2() {
     setIsSubmitting(true);
 
     try {
+      const user = auth.currentUser;
+      if (!user) {
+        alert("로그인이 세션이 만료되었습니다. 다시 로그인해주세요.");
+        navigate('/login');
+        return;
+      }
+
       const draft = {
         stockName,
         tagEmotion: emotion,
@@ -36,13 +44,13 @@ export default function RecordStep2() {
 
       const aiSummary = await generateAiFeedback(draft);
       
-      const newNote = saveNote({
+      const noteId = await saveNote({
         ...draft,
         aiSummary
-      });
+      }, user.uid);
 
       resetRecord();
-      navigate(`/note/${newNote.id}`, { replace: true });
+      navigate(`/note/${noteId}`, { replace: true });
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       console.error(error);
