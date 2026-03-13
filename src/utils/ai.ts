@@ -12,40 +12,39 @@ export const generateAiFeedback = async (
     await new Promise((resolve) => setTimeout(resolve, 1500));
     return {
       logic: [
-        `${noteData.tagMotive} 및 ${noteData.tagEmotion}의 영향을 받은 진입입니다.`,
-        `주관식 답변 요약: ${noteData.userAnswer1.substring(0, 20)}...`,
-        `API 키가 설정되지 않아 가상 데이터로 응답합니다.`
+        `${noteData.tagMotive} 상황에서 ${noteData.tagEmotion}의 영향을 크게 받은 진입입니다.`,
+        "명확한 펀더멘털 분석보다는 차트 흐름이나 주변 소식에 의존한 판단으로 보입니다."
       ],
-      risk: `현재 [${noteData.tagEmotion}] 상태로 인해 객관적인 수익 지표 확인이 누락되었습니다.`,
-      behavioralFeedback: `충동적(FOMO/호기심 등) 결정의 성향이 짙습니다. 명확한 목표 매도가를 설정하세요.`
+      risk: "기술적 분석에만 치중할 경우 기업 고유의 악재나 시장의 거시적 변동성에 무방비로 노출될 위험이 큽니다.",
+      behavioralFeedback: "현재 상태는 '조급함 편향(FOMO, Fear of Missing Out)'이 관찰됩니다. 남들이 수익을 낼 때 소외될까 두려워 무리하게 진입하는 심리죠. 지금 당장 '내가 이 가격에도 남들에게 추천할 수 있는가?'라는 질문을 스스로에게 던져보세요."
     };
   }
 
   const openai = new OpenAI({ apiKey, dangerouslyAllowBrowser: true });
 
   const prompt = `
-당신은 개인 투자자의 충동적인 의사결정을 방지하고, 논리적인 투자를 돕는 '행동재무학 기반 투자 코치'입니다. 
-사용자가 입력한 투자 맥락(종목, 감정, 계기, 결정)과 주관식 답변을 분석하여, 사용자의 투자 논리를 요약하고 숨겨진 리스크를 경고해 주세요.
+당신은 행동재무학(Behavioral Finance)에 정통한, 냉철하지만 다정한 '투자 심리 전담 주치의'입니다.
+유저의 투자 기록을 분석하여 인지적 편향과 감정에 휘둘린 뇌동매매를 막고 논리적인 투자를 하도록 돕는 것이 목적입니다.
 
-[사용자 입력 데이터]
-- 종목명: ${noteData.stockName}
-- 현재 포지션: ${noteData.tagPosition}
-- 현재 감정 상태: ${noteData.tagEmotion}
-- 투자 계기: ${noteData.tagMotive}
-- 질문 1에 대한 답변: ${noteData.userAnswer1}
-- 질문 2에 대한 답변: ${noteData.userAnswer2}
+"감정을 관리하세요" 같은 뻔한 훈계는 배제하고, 논리적이고 객관적인 '의사 선생님' 톤을 유지하세요.
 
-[출력 규칙]
-반드시 아래의 3가지 항목을 JSON 형식으로만 반환하세요. JSON 외의 부연 설명은 절대 하지 마세요.
+[사용자 데이터]
+- 종목: ${noteData.stockName}
+- 포지션: ${noteData.tagPosition}
+- 감정: ${noteData.tagEmotion}
+- 계기: ${noteData.tagMotive}
+- Q1 답변: ${noteData.userAnswer1}
+- Q2 답변: ${noteData.userAnswer2}
+
+반드시 아래 JSON 형식을 엄격히 지켜 답변하세요:
 
 {
   "logic": [
-    "핵심 투자 논리 1 (개조식)",
-    "핵심 투자 논리 2 (개조식)",
-    "핵심 투자 논리 3 (개조식)"
+    "핵심 판단 근거 1~2줄 요약",
+    "해당 근거가 논리적인지 단순 감정/추측인지 진단"
   ],
-  "risk": "해당 종목의 산업적 특성이나 언급되지 않은 1줄 리스크 경고",
-  "behavioralFeedback": "행동재무학 관점에서 본 1줄 피드백"
+  "risk": "간과하기 쉬운 맹점(수급, 차트, 테마 등) 1~2줄 경고",
+  "behavioralFeedback": "행동재무학 용어(영문 병기)를 반드시 포함하여 심리 상태를 중학생 수준의 비유로 설명하고, 지금 당장 스스로에게 던져야 할 객관적인 질문 한 가지 제시"
 }
 `;
 
