@@ -19,6 +19,7 @@ export const searchStocks = async (query: string): Promise<StockSearchResult[]> 
     const response = await axios.get(`${BASE_URL}/stock-proxy`, {
       params: { action: 'search', q: query }
     });
+    console.log(`[API] Search Results for "${query}":`, response.data);
     return response.data.result || [];
   } catch (error) {
     console.error('Stock search error:', error);

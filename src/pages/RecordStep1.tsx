@@ -45,14 +45,22 @@ export default function RecordStep1() {
   // Real-time Search Effect with Debounce
   useEffect(() => {
     const timer = setTimeout(async () => {
-      // Don't search if stock matches a selected one or is too short
       const trimmed = stockName.trim();
+      console.log("[Search] Current Input:", trimmed);
+      
       if (trimmed.length >= 2 && (!selectedStock || !selectedStock.description.includes(trimmed))) {
+        console.log("[Search] Triggering API for:", trimmed);
         setIsSearching(true);
-        const results = await searchStocks(trimmed);
-        setApiSuggestions(results.slice(0, 10)); 
-        setIsSearching(false);
-        setShowDropdown(results.length > 0);
+        try {
+          const results = await searchStocks(trimmed);
+          console.log("[Search] API Results:", results);
+          setApiSuggestions(results.slice(0, 10)); 
+          setShowDropdown(results.length > 0);
+        } catch (error) {
+          console.error("[Search] Error:", error);
+        } finally {
+          setIsSearching(false);
+        }
       } else {
         setApiSuggestions([]);
         setShowDropdown(false);
@@ -61,6 +69,17 @@ export default function RecordStep1() {
 
     return () => clearTimeout(timer);
   }, [stockName, selectedStock]);
+
+  // Click Away Listener
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleSelectSuggestion = async (stock: StockSearchResult) => {
     const nameOnly = stock.description.split(' (')[0];
@@ -162,14 +181,11 @@ export default function RecordStep1() {
 
             {/* API Suggestions Dropdown */}
             {showDropdown && apiSuggestions.length > 0 && (
-              <ul className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden max-h-64 overflow-y-auto">
+              <ul className="absolute z-[9999] left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden max-h-64 overflow-y-auto pointer-events-auto">
                 {apiSuggestions.map(stock => (
                   <li
                     key={stock.symbol}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      handleSelectSuggestion(stock);
-                    }}
+                    onClick={() => handleSelectSuggestion(stock)}
                     className="flex flex-col gap-0.5 px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors border-b border-slate-50 last:border-b-0"
                   >
                     <div className="flex justify-between items-center">
