@@ -2,9 +2,7 @@ import axios from 'axios';
 
 // In local dev, netlify functions are usually on :8888/.netlify/functions/
 // In production, they are relative /.netlify/functions/
-const BASE_URL = import.meta.env.DEV 
-  ? 'http://localhost:8888/.netlify/functions' 
-  : '/.netlify/functions';
+const BASE_URL = '/api';
 
 export interface StockSearchResult {
   displaySymbol: string;
