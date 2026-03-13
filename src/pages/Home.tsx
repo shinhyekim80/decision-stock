@@ -66,7 +66,7 @@ export default function Home() {
           <div className="flex items-center gap-3">
             <span className="text-xl">🚨</span>
             <div className="flex flex-col">
-              <span className="font-bold text-sm text-red-700">과거의 내가 남긴 투자 오답노트 {reviewNeededNotes.length}건이 상기되었습니다!</span>
+              <span className="font-bold text-sm text-red-700">과거의 내가 남긴 투자 오답노트 {reviewNeededNotes.length}건을 점검할 시간입니다.</span>
               <span className="text-xs text-red-500 font-medium mt-0.5">지금 아래 목록에서 빨간색 노트를 눌러 확인하세요.</span>
             </div>
           </div>
@@ -164,7 +164,7 @@ export default function Home() {
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex flex-col gap-1">
                     {note.status === 'review_needed' && (
-                      <span className="text-[10px] bg-red-600 text-white px-1.5 py-0.5 rounded font-black w-fit animate-pulse">복기 시점 도달</span>
+                      <span className="text-[10px] bg-red-600 text-white px-1.5 py-0.5 rounded font-black w-fit animate-pulse">기록 점검</span>
                     )}
                     <h4 className="font-bold text-slate-800">{note.stockName || '종목 미상'}</h4>
                   </div>
