@@ -5,7 +5,6 @@ import {
   getDocs, 
   query, 
   where, 
-  orderBy, 
   doc, 
   updateDoc,
   getDoc
@@ -18,12 +17,11 @@ export const getNotes = async (uid: string): Promise<InvestmentNote[]> => {
   try {
     const q = query(
       collection(db, COLLECTION_NAME),
-      where('userId', '==', uid),
-      orderBy('createdAt', 'desc')
+      where('userId', '==', uid)
     );
     
     const querySnapshot = await getDocs(q);
-    const notes: InvestmentNote[] = [];
+    let notes: InvestmentNote[] = [];
     const nowStr = new Date().toISOString();
     const updatePromises: Promise<void>[] = [];
 
@@ -33,16 +31,15 @@ export const getNotes = async (uid: string): Promise<InvestmentNote[]> => {
 
       // Expiration check logic
       if (note.status === 'active' && note.targetReviewDate && note.targetReviewDate < nowStr) {
-        // Update local object immediately for UI responsiveness
         note.status = 'review_needed';
-        // Fire off firestore update without blocking the whole list return
         updatePromises.push(updateDoc(doc(db, COLLECTION_NAME, d.id), { status: 'review_needed' }));
       }
       notes.push(note);
     });
 
-    // Optionally await updates if strictly necessary, but better to return data first.
-    // However, for data consistency in simple apps, it's safer to let them run.
+    // Sort in JS to avoid requiring a composite index in Firestore
+    notes.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
     if (updatePromises.length > 0) {
       Promise.all(updatePromises).catch(err => console.error('Background status update failed:', err));
     }
@@ -50,6 +47,7 @@ export const getNotes = async (uid: string): Promise<InvestmentNote[]> => {
     return notes;
   } catch (error) {
     console.error('Error fetching notes:', error);
+    // Return empty array so the UI can at least stop loading
     return [];
   }
 };
@@ -69,7 +67,11 @@ export const getNoteById = async (id: string): Promise<InvestmentNote | undefine
 };
 
 export const saveNote = async (
-  note: Omit<InvestmentNote, 'id' | 'userId' | 'createdAt' | 'status' | 'targetReviewDate'>,
+  note: Omit<InvestmentNote, 'id' | 'userId' | 'createdAt' | 'status' | 'targetReviewDate'> & {
+    stockTicker?: string;
+    entryPrice?: number;
+    currency?: string;
+  },
   uid: string
 ): Promise<string> => {
   const now = new Date();

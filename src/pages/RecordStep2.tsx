@@ -8,7 +8,8 @@ import { generateAiFeedback } from '../utils/ai';
 export default function RecordStep2() {
   const navigate = useNavigate();
   const { 
-    stockName, emotion, motive, position,
+    stockName, stockTicker, entryPrice, currency,
+    emotion, motive, position,
     question1, question2,
     answer1, setAnswer1, 
     answer2, setAnswer2, 
@@ -34,6 +35,9 @@ export default function RecordStep2() {
 
       const draft = {
         stockName,
+        stockTicker,
+        entryPrice,
+        currency,
         tagEmotion: emotion,
         tagMotive: motive,
         tagPosition: position,
@@ -47,7 +51,7 @@ export default function RecordStep2() {
       const noteId = await saveNote({
         ...draft,
         aiSummary
-      }, user.uid);
+      } as any, user.uid);
 
       resetRecord();
       navigate(`/note/${noteId}`, { replace: true });

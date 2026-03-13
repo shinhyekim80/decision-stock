@@ -2,7 +2,94 @@ import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../firebase';
 import { getNotes } from '../utils/storage';
+import { getQuote } from '../utils/stockApi';
 import type { InvestmentNote } from '../types';
+
+function NoteCard({ note, onClick }: { note: InvestmentNote; onClick: (id: string) => void }) {
+  const [livePrice, setLivePrice] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (note.stockTicker) {
+      const fetchPrice = async () => {
+        const price = await getQuote(note.stockTicker!);
+        setLivePrice(price);
+      };
+      fetchPrice();
+    }
+  }, [note.stockTicker]);
+
+  const profitLoss = useMemo(() => {
+    if (note.entryPrice && livePrice) {
+      const diff = livePrice - note.entryPrice;
+      const pct = (diff / note.entryPrice) * 100;
+      return {
+        pct: pct.toFixed(2),
+        isProfit: pct >= 0,
+        color: pct >= 0 ? 'bg-red-50 text-red-600 border-red-100' : 'bg-blue-50 text-blue-600 border-blue-100'
+      };
+    }
+    return null;
+  }, [note.entryPrice, livePrice]);
+
+  return (
+    <div 
+      onClick={() => onClick(note.id)}
+      className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 cursor-pointer hover:border-blue-300 transition-colors"
+    >
+      <div className="flex justify-between items-start mb-2">
+        <div className="flex flex-col gap-1">
+          {note.status === 'review_needed' && (
+            <span className="text-[10px] bg-red-600 text-white px-1.5 py-0.5 rounded font-black w-fit animate-pulse">기록 점검</span>
+          )}
+          <div className="flex items-center gap-2">
+            <h4 className="font-bold text-slate-800">{note.stockName}</h4>
+            {note.stockTicker && <span className="text-[10px] font-black bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">{note.stockTicker}</span>}
+          </div>
+        </div>
+        
+        {profitLoss ? (
+          <div className={`px-2 py-1 rounded-lg border text-[10px] font-black ${profitLoss.color}`}>
+            {profitLoss.isProfit ? '+' : ''}{profitLoss.pct}%
+          </div>
+        ) : (
+          <span className="text-xs text-slate-400 font-medium">
+            {new Date(note.createdAt).toLocaleDateString()}
+          </span>
+        )}
+      </div>
+      
+      <div className="flex gap-2 mb-3">
+        <span className={`text-xs px-2 py-1 rounded-md font-bold ${
+          note.tagPosition === '매수' ? 'bg-blue-50 text-blue-600' :
+          note.tagPosition === '매도' ? 'bg-red-50 text-red-600' :
+          'bg-slate-100 text-slate-600'
+        }`}>
+          {note.tagPosition}
+        </span>
+        <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md font-medium border border-slate-200">
+          {note.tagEmotion}
+        </span>
+      </div>
+      
+      <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 flex items-start gap-2.5">
+        <span className="text-sm mt-0.5">🤖</span>
+        <p className="text-xs text-slate-500 font-medium leading-relaxed line-clamp-2">
+          {note.aiSummary?.behavioralFeedback || "진입 시점의 시장 상황과 본인의 감정을 복기해 보세요."}
+        </p>
+      </div>
+      
+      {note.entryPrice ? (
+        <div className="mt-3 flex justify-between items-center text-[10px]">
+          <div className="flex gap-3">
+            <span className="text-slate-400">진입: <span className="text-slate-600 font-bold">{note.currency === 'USD' ? '$' : ''}{note.entryPrice.toLocaleString()}{note.currency === 'KRW' ? '원' : ''}</span></span>
+            {livePrice && <span className="text-slate-400">현재: <span className="text-slate-600 font-bold">{note.currency === 'USD' ? '$' : ''}{livePrice.toLocaleString()}{note.currency === 'KRW' ? '원' : ''}</span></span>}
+          </div>
+          {profitLoss && <span className="text-slate-300">{new Date(note.createdAt).toLocaleDateString()}</span>}
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 export default function Home() {
   const navigate = useNavigate();
@@ -189,44 +276,7 @@ export default function Home() {
             </div>
           ) : (
             filteredNotes.map(note => (
-              <div 
-                key={note.id} 
-                onClick={() => navigate(`/note/${note.id}`)}
-                className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 cursor-pointer hover:border-blue-300 transition-colors"
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex flex-col gap-1">
-                    {note.status === 'review_needed' && (
-                      <span className="text-[10px] bg-red-600 text-white px-1.5 py-0.5 rounded font-black w-fit animate-pulse">기록 점검</span>
-                    )}
-                    <h4 className="font-bold text-slate-800">{note.stockName || '종목 미상'}</h4>
-                  </div>
-                  <span className="text-xs text-slate-400 font-medium">
-                    {new Date(note.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-                <div className="flex gap-2 mb-3">
-                  <span className={`text-xs px-2 py-1 rounded-md font-bold ${
-                    note.tagPosition === '매수' ? 'bg-blue-50 text-blue-600' :
-                    note.tagPosition === '매도' ? 'bg-red-50 text-red-600' :
-                    'bg-slate-100 text-slate-600'
-                  }`}>
-                    {note.tagPosition}
-                  </span>
-                  <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md font-medium border border-slate-200">
-                    {note.tagEmotion}
-                  </span>
-                </div>
-                
-                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 flex items-start gap-2.5">
-                  <span className="text-sm mt-0.5">🤖</span>
-                  <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                    {note.aiSummary 
-                      ? `AI: ${note.aiSummary.behavioralFeedback}` 
-                      : "AI: 감정적인 접근일 수 있습니다. 자세한 분석을 확인해보세요."}
-                  </p>
-                </div>
-              </div>
+              <NoteCard key={note.id} note={note} onClick={(id) => navigate(`/note/${id}`)} />
             ))
           )}
         </div>

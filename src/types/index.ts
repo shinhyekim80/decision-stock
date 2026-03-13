@@ -2,6 +2,9 @@ export interface InvestmentNote {
   id: string;
   userId: string;
   stockName: string;
+  stockTicker?: string; // Ticker from API (e.g., AAPL)
+  entryPrice?: number; // Price at the time of recording
+  currency?: string; // USD, KRW etc
   currentPrice?: number;
   tagMotive: string;
   tagEmotion: string;
@@ -24,6 +27,12 @@ export type RecordContextType = {
   // Step 1 Data
   stockName: string;
   setStockName: (val: string) => void;
+  stockTicker: string;
+  setStockTicker: (val: string) => void;
+  entryPrice: number;
+  setEntryPrice: (val: number) => void;
+  currency: string;
+  setCurrency: (val: string) => void;
   emotion: string;
   setEmotion: (val: string) => void;
   motive: string;
@@ -45,4 +54,5 @@ export type RecordContextType = {
 
   // Actions
   resetRecord: () => void;
+  setRecordData: (data: Partial<RecordContextType>) => void;
 };

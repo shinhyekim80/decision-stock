@@ -7,6 +7,9 @@ const RecordContext = createContext<RecordContextType | undefined>(undefined);
 
 export function RecordProvider({ children }: { children: ReactNode }) {
   const [stockName, setStockName] = useState('');
+  const [stockTicker, setStockTicker] = useState('');
+  const [entryPrice, setEntryPrice] = useState(0);
+  const [currency, setCurrency] = useState('USD');
   const [emotion, setEmotion] = useState('');
   const [motive, setMotive] = useState('');
   const [position, setPosition] = useState('');
@@ -21,8 +24,18 @@ export function RecordProvider({ children }: { children: ReactNode }) {
     [emotion, motive]
   );
 
+  const setRecordData = (data: Partial<RecordContextType>) => {
+    if (data.stockName !== undefined) setStockName(data.stockName);
+    if (data.stockTicker !== undefined) setStockTicker(data.stockTicker);
+    if (data.entryPrice !== undefined) setEntryPrice(data.entryPrice);
+    if (data.currency !== undefined) setCurrency(data.currency);
+  };
+
   const resetRecord = () => {
     setStockName('');
+    setStockTicker('');
+    setEntryPrice(0);
+    setCurrency('USD');
     setEmotion('');
     setMotive('');
     setPosition('');
@@ -35,6 +48,9 @@ export function RecordProvider({ children }: { children: ReactNode }) {
     <RecordContext.Provider
       value={{
         stockName, setStockName,
+        stockTicker, setStockTicker,
+        entryPrice, setEntryPrice,
+        currency, setCurrency,
         emotion, setEmotion,
         motive, setMotive,
         position, setPosition,
@@ -43,7 +59,8 @@ export function RecordProvider({ children }: { children: ReactNode }) {
         answer1, setAnswer1,
         answer2, setAnswer2,
         checkDate, setCheckDate,
-        resetRecord
+        resetRecord,
+        setRecordData
       }}
     >
       {children}
