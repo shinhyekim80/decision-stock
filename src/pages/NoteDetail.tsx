@@ -59,10 +59,19 @@ export default function NoteDetail() {
       </header>
 
       <section className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col mb-6">
-        <h1 className="text-3xl font-extrabold text-slate-900 mb-2">{note.stockName}</h1>
+        <div className="flex items-center gap-3 mb-2">
+          <h1 className="text-3xl font-extrabold text-slate-900 leading-tight">{note.stockName}</h1>
+          {note.stockTicker && <span className="text-xs font-black bg-slate-100 text-slate-500 px-2 py-1 rounded-lg">{note.stockTicker}</span>}
+        </div>
         <div className="flex justify-between items-center mb-4">
-          <span className="text-slate-400 text-sm font-medium">{dateStr} 기록됨</span>
-          <span className="font-mono font-bold text-slate-700 bg-slate-100 px-3 py-1 rounded-lg text-sm">-</span>
+          <div className="flex flex-col">
+            <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">{dateStr} 기록됨</span>
+            {note.entryPrice ? (
+              <span className="text-slate-600 font-bold text-sm mt-1">
+                기록 당시 주가: {note.currency === 'USD' ? '$' : ''}{note.entryPrice.toLocaleString()}{note.currency === 'KRW' ? '원' : ''}
+              </span>
+            ) : null}
+          </div>
         </div>
         
         <div className="flex flex-wrap gap-2 mb-2">
